@@ -38,7 +38,7 @@ export default function Step4Lopmi({ data, update }: Props) {
 
       {data.lopmi_intrusion_confirmed === true && (
         <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded p-3">
-          ⚠ Dépôt de plainte obligatoire sous 72h. Utiliser le modèle disponible sur le Sharepoint interne.
+          Dépôt de plainte obligatoire sous 72h. Utiliser le modèle disponible sur le Sharepoint interne.
         </p>
       )}
     </div>

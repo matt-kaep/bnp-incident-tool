@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import RegulationBlock from "./RegulationBlock";
 import Countdown from "./Countdown";
@@ -38,14 +37,12 @@ export default function ResultsDashboard({ result, incidentData, onReset }: Prop
       <div className={`${GLOBAL_COLORS[result.global_level]} rounded-xl p-6 text-white space-y-2`}>
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-bold">{GLOBAL_LABELS[result.global_level]}</h2>
-          <Button
-            variant="outline"
-            size="sm"
+          <button
             onClick={onReset}
-            className="text-white border-white/40 hover:bg-white/10"
+            className="text-sm font-medium bg-white/15 text-white border border-white/50 rounded-md px-3 py-1.5 hover:bg-white/25 transition-colors"
           >
             Nouvel incident
-          </Button>
+          </button>
         </div>
         <div className="flex gap-2">
           {activeRegs.map((reg) => (

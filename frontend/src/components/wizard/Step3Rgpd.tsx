@@ -51,7 +51,7 @@ export default function Step3Rgpd({ data, update }: Props) {
 
       {data.rgpd_q1_is_personal_breach === false && (
         <p className="text-sm text-gray-600 bg-gray-50 border rounded p-3">
-          ✓ Aucune notification RGPD requise. Documentation interne uniquement.
+          Aucune notification RGPD requise. Documentation interne uniquement.
         </p>
       )}
 
@@ -66,14 +66,14 @@ export default function Step3Rgpd({ data, update }: Props) {
 
       {data.rgpd_q2_risk_rights === false && (
         <p className="text-sm text-gray-600 bg-gray-50 border rounded p-3">
-          ✓ Documentation interne uniquement. Pas de notification APD requise.
+          Documentation interne uniquement. Pas de notification APD requise.
         </p>
       )}
 
       {data.rgpd_q2_risk_rights === true && (
         <>
           <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded p-3">
-            ⚠ Notification de l'APD compétente (ex: CNIL) requise sous 72h.
+            Notification de l'APD compétente (ex: CNIL) requise sous 72h.
             Évaluer si d'autres autorités EEA doivent être notifiées.
           </p>
           <YesNo

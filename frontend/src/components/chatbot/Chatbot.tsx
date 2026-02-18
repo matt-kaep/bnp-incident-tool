@@ -50,7 +50,7 @@ export default function Chatbot({ incidentDescription }: Props) {
     <Card>
       <CardHeader>
         <CardTitle className="text-base">
-          💬 Assistant réglementaire — Questions sur cet incident
+          Assistant réglementaire — Questions sur cet incident
         </CardTitle>
         <p className="text-xs text-gray-500">
           Posez vos questions : les réponses sont basées sur les textes DORA, RGPD et LOPMI.
