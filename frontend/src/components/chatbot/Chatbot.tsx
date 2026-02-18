@@ -1,28 +1,112 @@
 import { useState, useRef, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { chatWithAgent } from "../../lib/api";
+import { chatWithAgent, type ChatSource } from "../../lib/api";
 
 interface Message {
   role: "user" | "assistant";
   content: string;
-  sources?: Array<{ source: string; page: string }>;
+  sources?: ChatSource[];
 }
 
 interface Props {
   incidentDescription: string;
 }
 
+function IconChat() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+    </svg>
+  );
+}
+
+function IconClose() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+      <path d="M18 6L6 18M6 6l12 12" />
+    </svg>
+  );
+}
+
+function IconSend() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+      <line x1="22" y1="2" x2="11" y2="13" />
+      <polygon points="22 2 15 22 11 13 2 9 22 2" />
+    </svg>
+  );
+}
+
+function TypingIndicator() {
+  return (
+    <div className="flex justify-start">
+      <div className="bg-gray-100 px-4 py-3 rounded-2xl rounded-bl-sm">
+        <div className="flex gap-1 items-center h-4">
+          {[0, 150, 300].map((delay) => (
+            <span
+              key={delay}
+              className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+              style={{ animationDelay: `${delay}ms` }}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SourceCard({ source }: { source: ChatSource }) {
+  const [expanded, setExpanded] = useState(false);
+  const name = source.source.replace(/\.pdf$/i, "").replace(/_/g, " ");
+  const hasLongExcerpt = source.excerpt && source.excerpt.length > 150;
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl p-3 text-xs shadow-sm">
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <span className="font-semibold text-gray-800 truncate">{name}</span>
+        {source.page !== "" && (
+          <span className="shrink-0 bg-gray-100 text-gray-500 rounded-md px-2 py-0.5 font-mono">
+            p. {source.page}
+          </span>
+        )}
+      </div>
+      {source.excerpt && (
+        <>
+          <p
+            className={`text-gray-600 leading-relaxed ${
+              expanded ? "" : "line-clamp-3"
+            }`}
+          >
+            {source.excerpt}
+          </p>
+          {hasLongExcerpt && (
+            <button
+              onClick={() => setExpanded(!expanded)}
+              className="mt-1.5 text-green-700 hover:underline text-xs font-medium"
+            >
+              {expanded ? "Voir moins" : "Voir le passage complet"}
+            </button>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function Chatbot({ incidentDescription }: Props) {
+  const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    if (open) setTimeout(() => textareaRef.current?.focus(), 50);
+  }, [open]);
 
   const send = async () => {
     if (!input.trim() || loading) return;
@@ -47,65 +131,95 @@ export default function Chatbot({ incidentDescription }: Props) {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">
-          Assistant réglementaire — Questions sur cet incident
-        </CardTitle>
-        <p className="text-xs text-gray-500">
-          Posez vos questions : les réponses sont basées sur les textes DORA, RGPD et LOPMI.
-        </p>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {messages.length > 0 && (
-          <div className="max-h-80 overflow-y-auto space-y-3 border rounded p-3 bg-gray-50">
+    <>
+      {/* Bouton flottant */}
+      <button
+        onClick={() => setOpen((v) => !v)}
+        aria-label={open ? "Fermer l'assistant" : "Ouvrir l'assistant réglementaire"}
+        className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-green-700 hover:bg-green-800 active:scale-95 text-white shadow-xl flex items-center justify-center transition-all duration-150"
+      >
+        {open ? <IconClose /> : <IconChat />}
+      </button>
+
+      {/* Panneau de chat */}
+      {open && (
+        <div className="fixed bottom-24 right-6 z-50 w-[460px] max-h-[680px] flex flex-col bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
+          {/* En-tête */}
+          <div className="bg-green-700 px-5 py-4 text-white shrink-0">
+            <p className="font-semibold text-sm">Assistant réglementaire</p>
+            <p className="text-xs text-green-200 mt-0.5">
+              Recherche dans les textes DORA, RGPD et LOPMI
+            </p>
+          </div>
+
+          {/* Zone messages */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-5 bg-gray-50">
+            {messages.length === 0 && (
+              <p className="text-xs text-gray-400 text-center pt-8">
+                Posez vos questions sur les obligations réglementaires liées à cet incident.
+              </p>
+            )}
+
             {messages.map((m, i) => (
-              <div key={i} className={`text-sm ${m.role === "user" ? "text-right" : ""}`}>
-                <span
-                  className={`inline-block px-3 py-2 rounded-lg max-w-[85%] text-left ${
+              <div
+                key={i}
+                className={`flex flex-col gap-2 ${
+                  m.role === "user" ? "items-end" : "items-start"
+                }`}
+              >
+                <div
+                  className={`px-4 py-3 rounded-2xl text-sm leading-relaxed max-w-[85%] ${
                     m.role === "user"
-                      ? "bg-green-700 text-white"
-                      : "bg-white border text-gray-800"
+                      ? "bg-green-700 text-white rounded-br-none"
+                      : "bg-white border border-gray-200 text-gray-800 rounded-bl-none shadow-sm"
                   }`}
                 >
                   {m.content}
-                  {m.sources && m.sources.length > 0 && (
-                    <div className="mt-2 pt-2 border-t border-gray-200 text-xs text-gray-500">
-                      Sources : {m.sources.map((s) => `${s.source} p.${s.page}`).join(", ")}
-                    </div>
-                  )}
-                </span>
+                </div>
+
+                {m.sources && m.sources.length > 0 && (
+                  <div className="w-full space-y-2">
+                    <p className="text-xs text-gray-400 font-medium px-1">
+                      {m.sources.length} source{m.sources.length > 1 ? "s" : ""} trouvée{m.sources.length > 1 ? "s" : ""}
+                    </p>
+                    {m.sources.map((s, j) => (
+                      <SourceCard key={j} source={s} />
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
-            {loading && (
-              <p className="text-xs text-gray-400 italic">Recherche en cours...</p>
-            )}
+
+            {loading && <TypingIndicator />}
             <div ref={bottomRef} />
           </div>
-        )}
 
-        <div className="flex gap-2">
-          <Textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Ex: Quelles sont les obligations de notification DORA pour un incident majeur ?"
-            rows={2}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                send();
-              }
-            }}
-          />
-          <Button
-            onClick={send}
-            disabled={loading || !input.trim()}
-            className="bg-green-700 hover:bg-green-800 shrink-0"
-          >
-            Envoyer
-          </Button>
+          {/* Zone saisie */}
+          <div className="border-t border-gray-200 p-3 flex gap-2 bg-white shrink-0">
+            <textarea
+              ref={textareaRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Posez votre question réglementaire..."
+              rows={2}
+              className="flex-1 resize-none text-sm border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent leading-relaxed"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  send();
+                }
+              }}
+            />
+            <button
+              onClick={send}
+              disabled={loading || !input.trim()}
+              className="bg-green-700 hover:bg-green-800 disabled:opacity-40 text-white px-4 rounded-xl transition-colors shrink-0 flex items-center justify-center"
+            >
+              <IconSend />
+            </button>
+          </div>
         </div>
-      </CardContent>
-    </Card>
+      )}
+    </>
   );
 }

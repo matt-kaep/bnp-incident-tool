@@ -2,6 +2,7 @@ import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import IncidentWizard from "./components/wizard/IncidentWizard";
 import ResultsDashboard from "./components/results/ResultsDashboard";
+import Chatbot from "./components/chatbot/Chatbot";
 import type { ClassificationResult, IncidentInput } from "./lib/api";
 
 const queryClient = new QueryClient();
@@ -49,6 +50,10 @@ export default function App() {
           )}
         </main>
       </div>
+
+      {result !== null && incidentData !== null && (
+        <Chatbot incidentDescription={incidentData.description} />
+      )}
     </QueryClientProvider>
   );
 }

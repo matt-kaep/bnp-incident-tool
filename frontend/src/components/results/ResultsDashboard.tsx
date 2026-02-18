@@ -1,7 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import RegulationBlock from "./RegulationBlock";
 import Countdown from "./Countdown";
-import Chatbot from "../chatbot/Chatbot";
 import type { ClassificationResult, IncidentInput } from "../../lib/api";
 
 interface Props {
@@ -65,8 +64,6 @@ export default function ResultsDashboard({ result, incidentData, onReset }: Prop
         <RegulationBlock title="LOPMI — Dépôt de plainte" result={result.lopmi} />
       </div>
 
-      {/* Chatbot RAG */}
-      <Chatbot incidentDescription={incidentData.description} />
     </div>
   );
 }

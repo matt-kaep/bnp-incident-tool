@@ -58,11 +58,15 @@ class RagService:
 
         context = "\n\n---\n\n".join([d.page_content for d in docs])
         sources = [
-            {"source": d.metadata.get("source", ""), "page": d.metadata.get("page", "")}
+            {
+                "source": d.metadata.get("source", ""),
+                "page": str(d.metadata.get("page", "")),
+                "excerpt": d.page_content[:500].strip(),
+            }
             for d in docs
         ]
 
-        answer = f"Passages pertinents trouvés dans les documents réglementaires :\n\n{context[:2000]}"
+        answer = f"{len(docs)} passage(s) pertinent(s) trouvé(s) dans les documents réglementaires."
 
         return {"answer": answer, "sources": sources, "context": context}
 

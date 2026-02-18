@@ -47,10 +47,16 @@ export const classifyIncident = async (
   return data;
 };
 
+export interface ChatSource {
+  source: string;
+  page: string;
+  excerpt?: string;
+}
+
 export const chatWithAgent = async (
   question: string,
   incidentContext: string = ""
-): Promise<{ answer: string; sources: Array<{ source: string; page: string }> }> => {
+): Promise<{ answer: string; sources: ChatSource[] }> => {
   const { data } = await api.post("/chat", {
     question,
     incident_context: incidentContext,
