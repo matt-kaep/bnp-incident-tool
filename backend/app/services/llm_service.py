@@ -7,16 +7,31 @@ client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 MODEL = os.getenv("LLM_MODEL", "claude-haiku-4-5-20251001")
 
 
-def _build_conversation_messages(history: list, current_user_message: str) -> list:
+def _build_conversation_messages(history: list) -> list:
+    """Reconstruit la conversation complète depuis l'historique.
+
+    Chaque round produit :
+    - assistant : les questions JSON du round
+    - user : les réponses + instruction de navigation (uniquement pour le dernier round)
+    """
     messages = []
-    for round_entry in history:
+    for i, round_entry in enumerate(history):
         messages.append({"role": "assistant", "content": round_entry["questions_json"]})
         answers_text = "\n".join(
             f"Question {a['question_id']} : {a['value']}"
             for a in round_entry["answers"]
         )
-        messages.append({"role": "user", "content": f"=== RÉPONSES ===\n{answers_text}"})
-    messages.append({"role": "user", "content": current_user_message})
+        is_last = (i == len(history) - 1)
+        if is_last:
+            round_count = len(history) + 1
+            if round_count >= 3:
+                instruction = "DERNIER ROUND POSSIBLE — tu DOIS conclure avec done: true."
+            else:
+                instruction = "Génère le round suivant ou la classification finale si tu as assez d'informations."
+            content = f"=== RÉPONSES ===\n{answers_text}\n\n=== ROUND {round_count}/3 ===\n{instruction}"
+        else:
+            content = f"=== RÉPONSES ===\n{answers_text}"
+        messages.append({"role": "user", "content": content})
     return messages
 
 
@@ -33,13 +48,14 @@ def start_session(initial_form: dict) -> dict:
     return {"done": parsed.get("done", False), "raw_json": raw}
 
 
-def continue_session(initial_form: dict, history: list, current_answers: list) -> dict:
+def continue_session(initial_form: dict, history: list, current_answers: list) -> dict:  # noqa: ARG001
+    """Continue la session.
+
+    `history` contient tous les rounds complétés incluant le round courant (avec ses réponses).
+    `current_answers` n'est plus utilisé directement — les réponses sont dans history[-1].
+    """
     initial_message = build_initial_message(initial_form)
-    messages = _build_conversation_messages(
-        history,
-        build_continue_message(history, current_answers)
-    )
-    # Insérer le message initial comme premier message user
+    messages = _build_conversation_messages(history)
     all_messages = [{"role": "user", "content": initial_message}] + messages
     response = client.messages.create(
         model=MODEL,

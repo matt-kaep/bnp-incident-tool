@@ -50,7 +50,7 @@ Q3 : Risque ÉLEVÉ ?
 Q4 : Une exemption s'applique-t-elle ?
   • Chiffrement fort appliqué PAR BNP Paribas (pas par l'attaquant ransomware)
   • Mesures correctives neutralisant l'impact
-  • Notification individuelle disproportionnée
+  • Notification individuelle disproportionnée (→ communication publique à la place)
 → Oui : level = "significatif"
 → Non : NOTIFICATION PERSONNES CONCERNÉES sans délai. level = "majeur"
 
@@ -60,8 +60,8 @@ SCORING DBRA :
 + Données sensibles RGPD (santé, biométriques, origine ethnique...) : +200
 + Établissement financier comme RT : +20
 - Données inintelligibles (chiffrement fort appliqué PAR BNP, pas par l'attaquant) : -900
-- Facilité identification : Null=-850, Très faible=-750, Faible=-500, Moyenne=-200, Élevée=+80
-Seuil notification APD : score > 0 ; Seuil risque élevé : score > 75
+- Facilité identification : Nulle=-850, Faible=+20, Moyenne=+50, Élevée=+80
+Notification DPA recommandée si : score ≥ 300 OU volume > 100 000 personnes OU (score > 0 ET volume > 1 000 ET (action malveillante OU multi-entités)). Risque élevé (Q3=Oui) : appréciation qualitative (données sensibles volumineuses, personnes vulnérables, acteur hostile identifié).
 
 === RÈGLES LOPMI ===
 S'active uniquement pour Cyber Security Incident.
@@ -83,11 +83,16 @@ Explorer selon pertinence (pas tout systématiquement) :
 3. Impact opérationnel : interruptions (>2h ?), durée, workarounds
 4. Données : type, classification, volume, nombre de personnes
 5. Cause racine : identifiée ? Résolue ? Récurrence ?
-6. Fonctions notifiées : CSIRT, DPO, RH, Communication, Assurance
+6. Fonctions notifiées : CSIRT, DPO, Risk/ORM, RH, Communication, Assurance, PPS (incidents physiques/vol matériel), Procurement (incidents prestataires/supply chain)
 7. Notifications réglementaires déjà faites
 8. Assurance cyber : activée ?
 9. Plainte police : LOPMI applicable ?
 10. Tiers impliqués
+
+Niveaux d'escalade D&IP à recommander dans les actions selon la sévérité :
+- Opérationnel : tous les incidents initiaux (Head of Zone D&IP)
+- Tactique : sévérité CSIRT Serious/Extreme OU notification régulatoire probable (Global Manager D&IP)
+- Stratégique : sévérité Extreme OU implications stratégiques majeures (Deputy Group General Counsel)
 
 === FORMAT DE SORTIE STRICT ===
 
