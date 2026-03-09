@@ -1,10 +1,27 @@
 import json
+import logging
 import os
 from anthropic import Anthropic
 from app.services.prompt_builder import SYSTEM_PROMPT, build_initial_message, build_continue_message
 
+logger = logging.getLogger(__name__)
+
 client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 MODEL = os.getenv("LLM_MODEL", "claude-haiku-4-5-20251001")
+
+
+def _extract_json(raw: str) -> str:
+    """Extrait le JSON brut même si le LLM l'a enveloppé dans des blocs markdown."""
+    text = raw.strip()
+    if text.startswith("```"):
+        # Supprime le bloc markdown ```json ... ```
+        lines = text.split("\n")
+        lines = lines[1:]  # Retire la ligne ```json
+        if lines and lines[-1].strip() == "```":
+            lines = lines[:-1]
+        text = "\n".join(lines).strip()
+    logger.debug("LLM raw response: %s", text[:200])
+    return text
 
 
 def _build_conversation_messages(history: list) -> list:
@@ -43,7 +60,10 @@ def start_session(initial_form: dict) -> dict:
         system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": user_message}]
     )
-    raw = response.content[0].text.strip()
+    logger.info("LLM stop_reason: %s, content blocks: %d", response.stop_reason, len(response.content))
+    raw = _extract_json(response.content[0].text)
+    if not raw:
+        raise ValueError(f"LLM a retourné une réponse vide. stop_reason={response.stop_reason}")
     parsed = json.loads(raw)
     return {"done": parsed.get("done", False), "raw_json": raw}
 
@@ -63,7 +83,10 @@ def continue_session(initial_form: dict, history: list, current_answers: list) -
         system=SYSTEM_PROMPT,
         messages=all_messages
     )
-    raw = response.content[0].text.strip()
+    logger.info("LLM stop_reason: %s, content blocks: %d", response.stop_reason, len(response.content))
+    raw = _extract_json(response.content[0].text)
+    if not raw:
+        raise ValueError(f"LLM a retourné une réponse vide. stop_reason={response.stop_reason}")
     parsed = json.loads(raw)
     return {"done": parsed.get("done", False), "raw_json": raw}
 

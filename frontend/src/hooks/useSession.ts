@@ -55,8 +55,9 @@ export function useSession() {
           roundNumber: 1,
         });
       }
-    } catch {
-      setError("Erreur lors du démarrage de la session. Vérifiez la connexion backend.");
+    } catch (e: unknown) {
+      const detail = (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+      setError(detail ?? "Erreur lors du démarrage de la session. Vérifiez la connexion backend.");
     } finally {
       setLoading(false);
     }
@@ -93,8 +94,9 @@ export function useSession() {
           roundNumber: roundNumber + 1,
         });
       }
-    } catch {
-      setError("Erreur lors de la soumission des réponses.");
+    } catch (e: unknown) {
+      const detail = (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+      setError(detail ?? "Erreur lors de la soumission des réponses.");
     } finally {
       setLoading(false);
     }
