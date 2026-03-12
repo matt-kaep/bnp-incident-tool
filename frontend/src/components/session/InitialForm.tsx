@@ -22,6 +22,7 @@ export default function InitialForm({ onSubmit, loading }: Props) {
   const [entityType, setEntityType] = useState("");
   const [personalData, setPersonalData] = useState<"yes" | "no" | "unknown">("unknown");
   const [dataVolume, setDataVolume] = useState("");
+  const [peopleVolume, setPeopleVolume] = useState("");
   const [crossBorder, setCrossBorder] = useState<"yes" | "no" | "unknown">("unknown");
   const [csirtSeverity, setCsirtSeverity] = useState("");
   const [servicenow, setServicenow] = useState("");
@@ -69,6 +70,7 @@ export default function InitialForm({ onSubmit, loading }: Props) {
       entity_type: entityType || undefined,
       personal_data_involved: personalData,
       data_volume_estimate: dataVolume || undefined,
+      people_volume_estimate: peopleVolume || undefined,
       cross_border: crossBorder,
       csirt_severity: (csirtSeverity as "low" | "moderate" | "serious" | "extreme") || undefined,
       servicenow_ticket: servicenow || undefined,
@@ -238,13 +240,25 @@ export default function InitialForm({ onSubmit, loading }: Props) {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Volume estimé (données / personnes)
+              Volume de données affectées
             </label>
             <input
               type="text"
               value={dataVolume}
               onChange={(e) => setDataVolume(e.target.value)}
-              placeholder="Ex: ~10 000 clients, 500 enregistrements"
+              placeholder="Ex: ~500 000 lignes, 20 Go, 5 bases de données..."
+              className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Nombre de personnes touchées
+            </label>
+            <input
+              type="text"
+              value={peopleVolume}
+              onChange={(e) => setPeopleVolume(e.target.value)}
+              placeholder="Ex: ~10 000 clients, 50 collaborateurs..."
               className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>

@@ -9,6 +9,7 @@ class InitialForm(BaseModel):
     entity_type: Optional[str] = None
     personal_data_involved: Optional[str] = None  # "yes" | "no" | "unknown"
     data_volume_estimate: Optional[str] = None
+    people_volume_estimate: Optional[str] = None
     cross_border: Optional[str] = None
     csirt_severity: Optional[str] = None
     servicenow_ticket: Optional[str] = None

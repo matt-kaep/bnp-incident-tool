@@ -11,6 +11,7 @@ export interface InitialForm {
   entity_type?: string;
   personal_data_involved?: "yes" | "no" | "unknown";
   data_volume_estimate?: string;
+  people_volume_estimate?: string;
   cross_border?: "yes" | "no" | "unknown";
   csirt_severity?: "low" | "moderate" | "serious" | "extreme";
   servicenow_ticket?: string;
