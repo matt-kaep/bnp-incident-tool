@@ -41,11 +41,13 @@ def _build_conversation_messages(history: list) -> list:
         is_last = (i == len(history) - 1)
         if is_last:
             round_count = len(history) + 1
-            if round_count >= 3:
+            if round_count >= 7:
                 instruction = "DERNIER ROUND POSSIBLE — tu DOIS conclure avec done: true."
+            elif round_count < 4:
+                instruction = " RAPPEL STRICT : INTERDICTION FORMELLE de conclure ce round. Tu DOIS  poser de nouvelles questions pour creuser le contexte (utilise les catégories LEG0115)."
             else:
                 instruction = "Génère le round suivant ou la classification finale si tu as assez d'informations."
-            content = f"=== RÉPONSES ===\n{answers_text}\n\n=== ROUND {round_count}/3 ===\n{instruction}"
+            content = f"=== RÉPONSES ===\n{answers_text}\n\n=== ROUND {round_count}/7 ===\n{instruction}"
         else:
             content = f"=== RÉPONSES ===\n{answers_text}"
             
