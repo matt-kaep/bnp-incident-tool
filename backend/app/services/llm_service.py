@@ -1,12 +1,14 @@
 import json
 import logging
 import os
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from app.services.prompt_builder import SYSTEM_PROMPT, build_initial_message, build_continue_message
 
 logger = logging.getLogger(__name__)
 
-genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+# --- NOUVELLE SYNTAXE DU SDK ---
+client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
 MODEL = os.getenv("LLM_MODEL", "gemini-3.1-flash-lite-preview")
 
 
@@ -25,15 +27,12 @@ def _extract_json(raw: str) -> str:
 
 
 def _build_conversation_messages(history: list) -> list:
-    """Reconstruit la conversation complète depuis l'historique.
-
-    Chaque round produit :
-    - model : les questions JSON du round (Gemini utilise "model", pas "assistant")
-    - user : les réponses + instruction de navigation (uniquement pour le dernier round)
-    """
+    """Reconstruit la conversation complète depuis l'historique."""
     messages = []
     for i, round_entry in enumerate(history):
-        messages.append({"role": "model", "parts": [round_entry["questions_json"]]})
+        # Nouvelle syntaxe pour le contenu : dict avec "text"
+        messages.append({"role": "model", "parts": [{"text": round_entry["questions_json"]}]})
+        
         answers_text = "\n".join(
             f"Question {a['question_id']} : {a['value']}"
             for a in round_entry["answers"]
@@ -51,7 +50,7 @@ def _build_conversation_messages(history: list) -> list:
         else:
             content = f"=== RÉPONSES ===\n{answers_text}"
             
-        messages.append({"role": "user", "parts": [content]})
+        messages.append({"role": "user", "parts": [{"text": content}]})
     return messages
 
 
@@ -59,13 +58,12 @@ def start_session(initial_form: dict) -> dict:
     user_message = build_initial_message(initial_form)
     
     combined_message = f"{SYSTEM_PROMPT}\n\n{user_message}"
-    model = genai.GenerativeModel(
-        model_name=MODEL,
-    )
     
-    response = model.generate_content(
-        contents=[{"role": "user", "parts": [combined_message]}],
-        generation_config=genai.GenerationConfig(max_output_tokens=2048)
+    # Appel API avec le nouveau client
+    response = client.models.generate_content(
+        model=MODEL,
+        contents=[{"role": "user", "parts": [{"text": combined_message}]}],
+        config=types.GenerateContentConfig(max_output_tokens=4096)
     )
     
     finish_reason = response.candidates[0].finish_reason.name if response.candidates else "UNKNOWN"
@@ -85,24 +83,19 @@ def start_session(initial_form: dict) -> dict:
 
 
 def continue_session(initial_form: dict, history: list, current_answers: list) -> dict:  # noqa: ARG001
-    """Continue la session.
-    `history` contient tous les rounds complétés incluant le round courant (avec ses réponses).
-    `current_answers` n'est plus utilisé directement — les réponses sont dans history[-1].
-    """
+    """Continue la session."""
     initial_message = build_initial_message(initial_form)
     messages = _build_conversation_messages(history)
 
     combined_initial = f"{SYSTEM_PROMPT}\n\n{initial_message}"
     
-    all_messages = [{"role": "user", "parts": [combined_initial]}] + messages
+    all_messages = [{"role": "user", "parts": [{"text": combined_initial}]}] + messages
     
-    model = genai.GenerativeModel(
-        model_name=MODEL,
-    )
-    
-    response = model.generate_content(
+    # Appel API avec le nouveau client
+    response = client.models.generate_content(
+        model=MODEL,
         contents=all_messages,
-        generation_config=genai.GenerationConfig(max_output_tokens=4096)
+        config=types.GenerateContentConfig(max_output_tokens=4096)
     )
     
     finish_reason = response.candidates[0].finish_reason.name if response.candidates else "UNKNOWN"
@@ -140,13 +133,11 @@ Voici des extraits des textes officiels récupérés par recherche sémantique :
 
 Régénère UNIQUEMENT le champ "narrative", enrichi avec des citations précises des articles. Retourne uniquement la narrative en texte brut (pas de JSON), 5-6 paragraphes, ton juridique professionnel."""
 
-    model = genai.GenerativeModel(
-        model_name=MODEL,
-    )
-    
-    response = model.generate_content(
-        contents=[{"role": "user", "parts": [user_message]}],
-        generation_config=genai.GenerationConfig(max_output_tokens=2048)
+    # Appel API avec le nouveau client
+    response = client.models.generate_content(
+        model=MODEL,
+        contents=[{"role": "user", "parts": [{"text": user_message}]}],
+        config=types.GenerateContentConfig(max_output_tokens=4096)
     )
     
     try:
