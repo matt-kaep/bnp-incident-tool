@@ -14,7 +14,11 @@ export default function InitialForm({ onSubmit, loading }: Props) {
 
   const [detectionDatetime, setDetectionDatetime] = useState(localIso);
   const [incidentTypes, setIncidentTypes] = useState<string[]>([]);
-  const [entityName, setEntityName] = useState("");
+  
+  // Modification : entityName devient un tableau, et on garde un state pour le champ texte custom
+  const [entityName, setEntityName] = useState<string[]>([]);
+  const [customEntity, setCustomEntity] = useState("");
+  
   const [entityType, setEntityType] = useState("");
   const [personalData, setPersonalData] = useState<"yes" | "no" | "unknown">("unknown");
   const [dataVolume, setDataVolume] = useState("");
@@ -22,7 +26,6 @@ export default function InitialForm({ onSubmit, loading }: Props) {
   const [csirtSeverity, setCsirtSeverity] = useState("");
   const [servicenow, setServicenow] = useState("");
   const [description, setDescription] = useState("");
-  const [selectedDropdown, setSelectedDropdown] = useState("");
   
   const today = new Date();
   const detection = new Date(detectionDatetime);
@@ -38,13 +41,31 @@ export default function InitialForm({ onSubmit, loading }: Props) {
     );
   };
 
+  // Nouvelle fonction pour gérer les cases à cocher des entités
+  const toggleEntity = (entity: string) => {
+    setEntityName((prev) => {
+      if (prev.includes(entity)) {
+        if (entity === "Autre") setCustomEntity(""); // Vide le champ si on décoche "Autre"
+        return prev.filter((e) => e !== entity);
+      }
+      return [...prev, entity];
+    });
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!entityName || incidentTypes.length === 0) return;
+    if (entityName.length === 0 || incidentTypes.length === 0) return;
+    
+    // Concaténation des entités choisies et de l'entité custom
+    const finalEntities = entityName
+      .filter((e) => e !== "Autre")
+      .concat(customEntity ? [customEntity] : [])
+      .join(", "); // On envoie une string pour ne pas casser ton backend
+
     onSubmit({
       detection_datetime: detectionDatetime,
       incident_types: incidentTypes,
-      entity_name: entityName,
+      entity_name: finalEntities,
       entity_type: entityType || undefined,
       personal_data_involved: personalData,
       data_volume_estimate: dataVolume || undefined,
@@ -116,7 +137,7 @@ export default function InitialForm({ onSubmit, loading }: Props) {
                   type="checkbox"
                   checked={incidentTypes.includes(value)}
                   onChange={() => toggleType(value)}
-                  className="mt-0.5"
+                  className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
                 <span className="text-sm text-gray-700">{label}</span>
               </label>
@@ -127,48 +148,54 @@ export default function InitialForm({ onSubmit, loading }: Props) {
         {/* Entité */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Entité BNP Paribas touchée <span className="text-red-500">*</span>
-          </label>
-          
-          {/* Le menu déroulant */}
-          <select
-            value={selectedDropdown}
-            onChange={(e) => {
-              const val = e.target.value;
-              setSelectedDropdown(val);
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Entités BNP Paribas touchées <span className="text-red-500">*</span>
+            </label>
+            
+            <div className="border rounded-md p-3 bg-white space-y-2 max-h-48 overflow-y-auto">
+              {[
+                "Global Banking (CIB)", "Global markets (CIB)", "Securities Services (CIB)", 
+                "BCEF", "BNL", "BGL", "Europe Méditerranée", "Arval", "Nickel", 
+                "FLOA", "Hello Bank !", "BNPP Fortis", "BNPP Cardif", "BNPP Asset Management", 
+                "BNPP Wealth Management", "BNPP Paribas Real Estate", "BNPP Personal Investors", 
+                "BNPP Personal Finance"
+              ].map((option) => (
+                <label key={option} className="flex items-center space-x-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={entityName.includes(option)}
+                    onChange={() => toggleEntity(option)}
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                  />
+                  <span className="text-sm text-gray-700">{option}</span>
+                </label>
+              ))}
 
-              if (val !== "Autre") {
-                setEntityName(val);
-              } else {
-                setEntityName("");
-              }
-            }}
-            className="w-full border rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required={selectedDropdown !== "Autre"}
-          >
-            <option value="" disabled>Sélectionnez une entité...</option>
-            <option value="BNP Paribas SA">BNP Paribas SA</option>
-            <option value="Cetelem">Cetelem</option>
-            <option value="Cardif">Cardif</option>
-            <option value="BGL BNP Paribas">BGL BNP Paribas</option>
-            <option value="Autre">Autre (préciser)</option>
-          </select>
-
-          {/* Le champ de texte conditionnel */}
-          {selectedDropdown === "Autre" && (
-            <div className="mt-2">
-              <input
-                type="text"
-                value={entityName}
-                onChange={(e) => setEntityName(e.target.value)}
-                placeholder="Précisez le nom de l'entité..."
-                className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              />
+              <label className="flex items-center space-x-3 cursor-pointer pt-1 border-t border-gray-100">
+                <input
+                  type="checkbox"
+                  checked={entityName.includes("Autre")}
+                  onChange={() => toggleEntity("Autre")}
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                />
+                <span className="text-sm text-gray-700 italic">Autre (préciser)</span>
+              </label>
             </div>
-          )}
-        </div>
+
+            {entityName.includes("Autre") && (
+              <div className="mt-2">
+                <input
+                  type="text"
+                  value={customEntity}
+                  onChange={(e) => setCustomEntity(e.target.value)}
+                  placeholder="Précisez le nom des entités..."
+                  className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+                  required
+                />
+              </div>
+            )}
+          </div>
+          
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Type d'entité
@@ -296,7 +323,7 @@ export default function InitialForm({ onSubmit, loading }: Props) {
 
       <button
         type="submit"
-        disabled={loading || !entityName || incidentTypes.length === 0}
+        disabled={loading || entityName.length === 0 || incidentTypes.length === 0}
         className="w-full py-3 px-6 bg-blue-700 text-white font-medium rounded-lg hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
         {loading ? "Analyse en cours..." : "Analyser l'incident"}
