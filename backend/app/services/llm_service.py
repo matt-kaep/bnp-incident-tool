@@ -7,7 +7,7 @@ from app.services.prompt_builder import SYSTEM_PROMPT, build_initial_message, bu
 logger = logging.getLogger(__name__)
 
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
-MODEL = os.getenv("LLM_MODEL", "gemini-1.5-flash")
+MODEL = os.getenv("LLM_MODEL", "gemini-3.1-flash-lite-preview")
 
 
 def _extract_json(raw: str) -> str:
