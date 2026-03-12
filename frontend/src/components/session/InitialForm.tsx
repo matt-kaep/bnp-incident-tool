@@ -22,7 +22,8 @@ export default function InitialForm({ onSubmit, loading }: Props) {
   const [csirtSeverity, setCsirtSeverity] = useState("");
   const [servicenow, setServicenow] = useState("");
   const [description, setDescription] = useState("");
-
+  const [selectedDropdown, setSelectedDropdown] = useState("");
+  
   const today = new Date();
   const detection = new Date(detectionDatetime);
   const diffMs = today.getTime() - detection.getTime();
@@ -126,18 +127,48 @@ export default function InitialForm({ onSubmit, loading }: Props) {
         {/* Entité */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Entité BNP Paribas touchée <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={entityName}
-              onChange={(e) => setEntityName(e.target.value)}
-              placeholder="Ex: BNP Paribas SA, Cetelem, Cardif…"
-              className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Entité BNP Paribas touchée <span className="text-red-500">*</span>
+          </label>
+          
+          {/* Le menu déroulant */}
+          <select
+            value={selectedDropdown}
+            onChange={(e) => {
+              const val = e.target.value;
+              setSelectedDropdown(val);
+
+              if (val !== "Autre") {
+                setEntityName(val);
+              } else {
+                setEntityName("");
+              }
+            }}
+            className="w-full border rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required={selectedDropdown !== "Autre"}
+          >
+            <option value="" disabled>Sélectionnez une entité...</option>
+            <option value="BNP Paribas SA">BNP Paribas SA</option>
+            <option value="Cetelem">Cetelem</option>
+            <option value="Cardif">Cardif</option>
+            <option value="BGL BNP Paribas">BGL BNP Paribas</option>
+            <option value="Autre">Autre (préciser)</option>
+          </select>
+
+          {/* Le champ de texte conditionnel */}
+          {selectedDropdown === "Autre" && (
+            <div className="mt-2">
+              <input
+                type="text"
+                value={entityName}
+                onChange={(e) => setEntityName(e.target.value)}
+                placeholder="Précisez le nom de l'entité..."
+                className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
+            </div>
+          )}
+        </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Type d'entité
