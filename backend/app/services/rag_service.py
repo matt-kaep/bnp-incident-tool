@@ -1,3 +1,4 @@
+import threading
 from pathlib import Path
 
 
@@ -6,16 +7,19 @@ class RagService:
         self,
         docs_path: str = "data/docs",
         persist_path: str = "data/chroma_db",
-        model_name: str = "BAAI/bge-small-en-v1.5",
+        model_name: str = "paraphrase-multilingual-MiniLM-L12-v2",
     ):
         self.docs_path = Path(docs_path)
         self.persist_path = persist_path
         self.vectorstore = None
         self._model_name = model_name
+        self._embeddings_cache = None
 
     def _get_embeddings(self):
-        from langchain_community.embeddings import HuggingFaceEmbeddings
-        return HuggingFaceEmbeddings(model_name=self._model_name)
+        if self._embeddings_cache is None:
+            from langchain_community.embeddings import HuggingFaceEmbeddings
+            self._embeddings_cache = HuggingFaceEmbeddings(model_name=self._model_name)
+        return self._embeddings_cache
 
     def index_documents(self) -> None:
         from langchain_community.document_loaders import PyPDFLoader
@@ -33,8 +37,10 @@ class RagService:
                 chunk.metadata["source"] = pdf_path.name
             docs.extend(chunks)
 
+        if not docs:
+            raise RuntimeError(f"Aucun document PDF trouvé dans {self.docs_path}")
+
         embeddings = self._get_embeddings()
-        from langchain_community.vectorstores import Chroma
         self.vectorstore = Chroma.from_documents(
             documents=docs,
             embedding=embeddings,
@@ -70,17 +76,24 @@ class RagService:
 
         return {"answer": answer, "sources": sources, "context": context}
 
+    def embed_text(self, text: str) -> list[float]:
+        embeddings = self._get_embeddings()
+        return embeddings.embed_query(text)
+
 
 _rag_service: RagService | None = None
+_rag_lock = threading.Lock()
 
 
 def get_rag_service() -> RagService:
     global _rag_service
     if _rag_service is None:
-        _rag_service = RagService()
-        index_path = Path("data/chroma_db")
-        if index_path.exists() and any(index_path.iterdir()):
-            _rag_service.load_existing_index()
-        else:
-            _rag_service.index_documents()
+        with _rag_lock:
+            if _rag_service is None:
+                _rag_service = RagService()
+                index_path = Path("data/chroma_db")
+                if index_path.exists() and any(index_path.iterdir()):
+                    _rag_service.load_existing_index()
+                else:
+                    _rag_service.index_documents()
     return _rag_service

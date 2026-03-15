@@ -38,11 +38,46 @@ class SessionContinueRequest(BaseModel):
     current_answers: list[QuestionAnswer]
 
 
-class SessionRefineRequest(BaseModel):
-    classification_json: str
-    incident_description: str
-
-
 class LLMRoundResponse(BaseModel):
     done: bool
     raw_json: str
+
+
+# === Incident persistence ===
+
+
+class RegulationAnalysis(BaseModel):
+    regulation: str  # "dora", "rgpd", "lopmi"
+    analysis: str  # 3-4 paragraphs
+
+
+class IncidentSaveRequest(BaseModel):
+    initial_form: InitialForm
+    rounds: list[RoundHistory]
+    classification: dict
+    incident_summary: str
+    actions: list[dict]
+    unknown_impacts: list[dict]
+    analyses: dict  # {"dora": "...", "rgpd": "...", "lopmi": "..."}
+
+
+class IncidentRecord(BaseModel):
+    id: str
+    created_at: str
+    initial_form: InitialForm
+    rounds: list[RoundHistory]
+    classification: dict
+    incident_summary: str
+    actions: list[dict]
+    unknown_impacts: list[dict]
+    analyses: dict
+    embeddings: dict = {}
+
+
+class IncidentSummary(BaseModel):
+    id: str
+    created_at: str
+    entity_name: str
+    incident_types: list[str]
+    global_level: str
+    first_deadline_hours: Optional[int] = None

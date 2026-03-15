@@ -1,46 +1,41 @@
 import { useState } from "react";
-import type { ClassificationData, InitialForm, ActionItem, RegulationClassification } from "../../lib/api";
-import { sessionRefine } from "../../lib/api";
+import type {
+  ClassificationData,
+  InitialForm,
+  ActionItem,
+  RegulationClassification,
+  SimilarIncident,
+} from "../../lib/api";
+import { deleteIncident } from "../../lib/api";
+import type { AnalysesState } from "../../hooks/useSession";
+import { LEVEL_CONFIG } from "../../lib/severity";
 import Countdown from "./Countdown";
 import RegulationBlock from "./RegulationBlock";
+import RegulationAnalysisBlock from "./RegulationAnalysisBlock";
+import SimilarIncidents from "./SimilarIncidents";
 
 interface Props {
   result: ClassificationData;
   initialForm: InitialForm;
   onReset: () => void;
+  analyses: AnalysesState;
+  incidentId: string | null;
+  similarIncidents: SimilarIncident[];
 }
 
-const LEVEL_CONFIG: Record<string, { label: string; bg: string; text: string }> = {
-  majeur: { label: "MAJEUR", bg: "bg-red-600", text: "text-white" },
-  significatif: { label: "SIGNIFICATIF", bg: "bg-orange-500", text: "text-white" },
-  mineur: { label: "MINEUR", bg: "bg-blue-600", text: "text-white" },
-  non_qualifie: { label: "NON QUALIFIÉ", bg: "bg-gray-400", text: "text-white" },
-  non_applicable: { label: "NON APPLICABLE", bg: "bg-gray-300", text: "text-gray-700" },
-};
-
-export default function ResultsDashboard({ result, initialForm, onReset }: Props) {
-  const [narrative, setNarrative] = useState(result.narrative);
-  const [refining, setRefining] = useState(false);
+export default function ResultsDashboard({
+  result,
+  initialForm,
+  onReset,
+  analyses,
+  incidentId,
+  similarIncidents,
+}: Props) {
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const globalConfig =
     LEVEL_CONFIG[result.classification.global_level] ?? LEVEL_CONFIG.non_qualifie;
 
-  const handleRefine = async () => {
-    setRefining(true);
-    try {
-      const res = await sessionRefine(
-        JSON.stringify(result.classification),
-        initialForm.description
-      );
-      setNarrative(res.narrative);
-    } catch {
-      // fail silently
-    } finally {
-      setRefining(false);
-    }
-  };
-
-  // Grouper les actions par réglementation
   const regulationKeys = ["dora", "rgpd", "lopmi"] as const;
 
   const actionsForReg = (reg: string): ActionItem[] =>
@@ -49,9 +44,21 @@ export default function ResultsDashboard({ result, initialForm, onReset }: Props
   const classForReg = (reg: string): RegulationClassification =>
     result.classification[reg as keyof typeof result.classification] as RegulationClassification;
 
+  const handleDelete = async () => {
+    if (!incidentId) return;
+    if (!window.confirm("Supprimer cet incident de l'historique ?")) return;
+    setDeleteError(null);
+    try {
+      await deleteIncident(incidentId);
+      onReset();
+    } catch {
+      setDeleteError("Impossible de supprimer l'incident.");
+    }
+  };
+
   return (
     <div className="space-y-6">
-      {/* Bandeau gravité */}
+      {/* Severity banner */}
       <div className={`${globalConfig.bg} rounded-lg p-5`}>
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
@@ -84,7 +91,18 @@ export default function ResultsDashboard({ result, initialForm, onReset }: Props
         </div>
       </div>
 
-      {/* Données manquantes */}
+      {/* Incident summary */}
+      <div className="bg-white rounded-lg border p-5">
+        <h3 className="font-semibold text-gray-900 mb-3">Résumé de l'incident</h3>
+        <div className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+          {result.incident_summary}
+        </div>
+      </div>
+
+      {/* Similar incidents */}
+      <SimilarIncidents incidents={similarIncidents} />
+
+      {/* Unknown impacts */}
       {result.unknown_impacts && result.unknown_impacts.length > 0 && (
         <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
           <h3 className="font-semibold text-orange-800 text-sm mb-2">
@@ -106,44 +124,52 @@ export default function ResultsDashboard({ result, initialForm, onReset }: Props
         </div>
       )}
 
-      {/* Blocs par réglementation */}
+      {/* Regulation classification blocks + analysis blocks */}
       {regulationKeys.map((reg) => {
         const r = classForReg(reg);
+        const a = analyses[reg];
         if (!r?.applicable) return null;
         return (
-          <RegulationBlock
-            key={reg}
-            regulation={reg.toUpperCase()}
-            result={r}
-            actions={actionsForReg(reg)}
-          />
+          <div key={reg} className="space-y-3">
+            <RegulationBlock
+              regulation={reg.toUpperCase()}
+              result={r}
+              actions={actionsForReg(reg)}
+            />
+            <RegulationAnalysisBlock
+              regulation={reg.toUpperCase()}
+              analysis={a.result}
+              isLoading={a.loading}
+              error={a.error}
+            />
+          </div>
         );
       })}
 
-      {/* Narrative LLM */}
-      <div className="bg-white rounded-lg border p-5">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="font-semibold text-gray-900">Analyse juridique</h3>
-          <button
-            onClick={handleRefine}
-            disabled={refining}
-            className="text-sm text-blue-600 hover:text-blue-800 border border-blue-200 rounded px-3 py-1 disabled:opacity-50 transition-colors"
-          >
-            {refining ? "Enrichissement..." : "Plus de précision avec les textes de loi"}
-          </button>
+      {/* Delete error */}
+      {deleteError && (
+        <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
+          {deleteError}
         </div>
-        <div className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
-          {narrative}
-        </div>
-      </div>
+      )}
 
-      {/* Reset */}
-      <button
-        onClick={onReset}
-        className="w-full py-2.5 px-6 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
-      >
-        Nouvel incident
-      </button>
+      {/* Actions */}
+      <div className="flex gap-3">
+        <button
+          onClick={onReset}
+          className="flex-1 py-2.5 px-6 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
+        >
+          Nouvel incident
+        </button>
+        {incidentId && (
+          <button
+            onClick={handleDelete}
+            className="py-2.5 px-6 border border-red-300 text-red-600 font-medium rounded-lg hover:bg-red-50 transition-colors"
+          >
+            Supprimer
+          </button>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,6 +1,9 @@
 import axios from "axios";
 
-const api = axios.create({ baseURL: "http://localhost:8000/api" });
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:8000/api",
+  timeout: 120000,
+});
 
 // === FORMULAIRE INITIAL ===
 
@@ -80,7 +83,7 @@ export interface ClassificationData {
   actions: ActionItem[];
   first_deadline_hours: number | null;
   unknown_impacts: UnknownImpact[];
-  narrative: string;
+  incident_summary: string;
 }
 
 // === API CALLS ===
@@ -105,70 +108,99 @@ export const sessionContinue = async (
   return data;
 };
 
-export const sessionRefine = async (
+// === REGULATION ANALYSIS (RAG-enriched) ===
+
+export interface SourceReference {
+  source: string;
+  page: string;
+  excerpt: string;
+}
+
+export interface RegulationAnalysis {
+  regulation: string;
+  analysis: string;
+  sources: SourceReference[];
+}
+
+export const analyzeRegulation = async (
+  regulation: "dora" | "rgpd" | "lopmi",
   classification_json: string,
-  incident_description: string
-): Promise<{ narrative: string }> => {
-  const { data } = await api.post("/session/refine", {
+  incident_summary: string
+): Promise<RegulationAnalysis> => {
+  const { data } = await api.post(`/analysis/${regulation}`, {
     classification_json,
-    incident_description,
+    incident_summary,
   });
   return data;
 };
 
-// === V1 COMPATIBILITY — wizard components (obsolètes, ne pas modifier) ===
+// === INCIDENT PERSISTENCE ===
 
-/** @deprecated V1 — utiliser InitialForm */
-export interface IncidentInput {
-  detection_datetime: string;
-  incident_type: "cyber" | "operational" | "payment";
-  personal_data_involved: boolean;
-  primary_criteria: string[];
-  materiality_thresholds: string[];
-  is_recurring: boolean;
-  rgpd_q1_is_personal_breach?: boolean | null;
-  rgpd_q2_risk_rights?: boolean | null;
-  rgpd_q3_high_risk?: boolean | null;
-  rgpd_q4_exemption?: boolean | null;
-  lopmi_intrusion_confirmed?: boolean | null;
-  description: string;
-}
-
-/** @deprecated V1 — utiliser RegulationClassification */
-export interface RegulationResult {
-  applicable: boolean;
-  is_major: boolean;
-  level: string;
-  actions: DeadlineAction[];
-  reasoning: string;
-}
-
-/** @deprecated V1 */
-export interface DeadlineAction {
-  action: string;
-  delay_hours: number | null;
-  delay_label: string;
-  regulation: string;
-}
-
-/** @deprecated V1 — utiliser ClassificationData */
-export interface ClassificationResult {
-  dora: RegulationResult;
-  rgpd: RegulationResult;
-  lopmi: RegulationResult;
+export interface IncidentSummaryItem {
+  id: string;
+  created_at: string;
+  entity_name: string;
+  incident_types: string[];
   global_level: string;
   first_deadline_hours: number | null;
 }
 
-/** @deprecated V1 — utiliser sessionStart/sessionContinue */
-export const classifyIncident = async (
-  input: IncidentInput
-): Promise<ClassificationResult> => {
-  const { data } = await api.post<ClassificationResult>("/classify", input);
+export interface IncidentRecord {
+  id: string;
+  created_at: string;
+  initial_form: InitialForm;
+  rounds: RoundHistory[];
+  classification: ClassificationData["classification"];
+  incident_summary: string;
+  actions: ActionItem[];
+  unknown_impacts: UnknownImpact[];
+  analyses: Record<string, string>;
+}
+
+export interface SimilarIncident {
+  id: string;
+  created_at: string;
+  entity_name: string;
+  incident_types: string[];
+  global_level: string;
+  incident_summary: string;
+  similarity: number;
+}
+
+export const saveIncident = async (
+  incidentData: Record<string, unknown>
+): Promise<IncidentRecord> => {
+  const { data } = await api.post("/incidents", incidentData);
   return data;
 };
 
-// RAG chatbot — conservé
+export const listIncidents = async (): Promise<IncidentSummaryItem[]> => {
+  const { data } = await api.get("/incidents");
+  return data;
+};
+
+export const getIncident = async (id: string): Promise<IncidentRecord> => {
+  const { data } = await api.get(`/incidents/${id}`);
+  return data;
+};
+
+export const deleteIncident = async (id: string): Promise<void> => {
+  await api.delete(`/incidents/${id}`);
+};
+
+export const findSimilarIncidents = async (
+  incident_summary: string,
+  exclude_id?: string
+): Promise<SimilarIncident[]> => {
+  const { data } = await api.post("/incidents/similar", {
+    incident_summary,
+    exclude_id,
+  });
+  return data;
+};
+
+// === RAG CHATBOT ===
+
 export interface ChatSource {
   source: string;
   page: string;

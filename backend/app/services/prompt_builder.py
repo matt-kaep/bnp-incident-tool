@@ -114,14 +114,17 @@ ROUNDS (done=false) :
 
 Types : "yes_no_unknown" (Oui/Non/Je ne sais pas), "multi_select" (cases à cocher, options dans "options"), "text" (texte libre)
 
+RÈGLE IMPÉRATIVE POUR LES QUESTIONS "yes_no_unknown" :
+L'utilisateur ne peut répondre QUE par "Oui", "Non" ou "Je ne sais pas". Tu DOIS donc formuler chaque question yes_no_unknown de sorte qu'une réponse Oui/Non/Je ne sais pas soit logique et suffisante. Exemples corrects : "Des données personnelles ont-elles été compromises ?", "L'incident a-t-il duré plus de 24 heures ?". Exemples INCORRECTS : "Quels systèmes ont été affectés ?", "Combien de personnes sont concernées ?" (ces questions nécessitent une réponse détaillée → utilise "text" ou "multi_select" à la place).
+
 CONCLUSION (done=true) :
 {
   "done": true,
   "classification": {
     "global_level": "majeur",
-    "dora": { "level": "majeur", "applicable": true, "reasoning": "..." },
-    "rgpd": { "level": "significatif", "applicable": true, "reasoning": "..." },
-    "lopmi": { "level": "non_applicable", "applicable": false, "reasoning": "..." }
+    "dora": { "level": "majeur", "applicable": true, "reasoning": "1-2 phrases concises justifiant le niveau." },
+    "rgpd": { "level": "significatif", "applicable": true, "reasoning": "1-2 phrases concises." },
+    "lopmi": { "level": "non_applicable", "applicable": false, "reasoning": "1-2 phrases." }
   },
   "actions": [
     { "regulation": "DORA", "action": "Rapport initial ACPR", "deadline_hours": 4, "deadline_label": "4h", "done": false }
@@ -130,7 +133,7 @@ CONCLUSION (done=true) :
   "unknown_impacts": [
     { "field": "Volume de données", "impact": "DBRA approximatif", "action_required": "Contacter le DPO" }
   ],
-  "narrative": "4-5 paragraphes juridiques précis citant les articles (Art. 17-20 DORA, Art. 33-34 RGPD, Art. 323-1 Code Pénal...). Ton professionnel."
+  "incident_summary": "Résumé factuel de l'incident en 3-4 paragraphes. Inclure : nature exacte de l'incident, systèmes affectés, données compromises, durée et impact opérationnel, actions de remédiation initiales. Ton neutre et factuel, pas d'analyse juridique."
 }
 
 === CONVERGENCE ===
