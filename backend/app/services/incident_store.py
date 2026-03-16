@@ -94,6 +94,17 @@ def delete_incident(incident_id: str) -> bool:
         return True
 
 
+def update_incident_notes(incident_id: str, notes: str) -> dict | None:
+    with _lock:
+        db = _read_db()
+        for inc in db:
+            if inc["id"] == incident_id:
+                inc["notes"] = notes
+                _write_db(db)
+                return {k: v for k, v in inc.items() if k != "embeddings"}
+        return None
+
+
 def find_similar(embedding: list[float], top_k: int = 5, exclude_id: Optional[str] = None) -> list[dict]:
     with _lock:
         db = _read_db()

@@ -8,7 +8,12 @@ from app.services.prompt_builder import SYSTEM_PROMPT, build_initial_message, bu
 logger = logging.getLogger(__name__)
 
 # --- NOUVELLE SYNTAXE DU SDK ---
-client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
+_api_key = os.getenv("GOOGLE_API_KEY")
+if _api_key:
+    client = genai.Client(api_key=_api_key)
+else:
+    logger.warning("GOOGLE_API_KEY not set — LLM calls will fail at runtime")
+    client = None  # type: ignore[assignment]
 MODEL = os.getenv("LLM_MODEL", "gemini-3.1-flash-lite-preview")
 
 

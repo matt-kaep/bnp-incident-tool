@@ -155,6 +155,7 @@ export interface IncidentRecord {
   actions: ActionItem[];
   unknown_impacts: UnknownImpact[];
   analyses: Record<string, string>;
+  notes?: string;
 }
 
 export interface SimilarIncident {
@@ -186,6 +187,14 @@ export const getIncident = async (id: string): Promise<IncidentRecord> => {
 
 export const deleteIncident = async (id: string): Promise<void> => {
   await api.delete(`/incidents/${id}`);
+};
+
+export const updateIncidentNotes = async (
+  id: string,
+  notes: string
+): Promise<IncidentRecord> => {
+  const { data } = await api.patch(`/incidents/${id}/notes`, { notes });
+  return data;
 };
 
 export const findSimilarIncidents = async (

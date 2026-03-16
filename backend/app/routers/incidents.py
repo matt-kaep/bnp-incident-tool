@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 from app.services import incident_store
 from app.services.rag_service import get_rag_service
@@ -52,6 +52,24 @@ async def delete_one(incident_id: str):
     if not deleted:
         raise HTTPException(status_code=404, detail="Incident non trouvé")
     return {"ok": True}
+
+
+class UpdateNotesRequest(BaseModel):
+    notes: str = Field(max_length=10000)
+
+
+@router.patch("/incidents/{incident_id}/notes")
+async def update_notes(incident_id: str, body: UpdateNotesRequest):
+    try:
+        updated = await asyncio.to_thread(
+            incident_store.update_incident_notes, incident_id, body.notes
+        )
+    except Exception:
+        logger.exception("Erreur mise à jour notes incident")
+        raise HTTPException(status_code=500, detail="Erreur lors de la mise à jour des notes.")
+    if not updated:
+        raise HTTPException(status_code=404, detail="Incident non trouvé")
+    return updated
 
 
 class SimilarRequest(BaseModel):

@@ -3,9 +3,10 @@ import { LEVEL_COLORS } from "../../lib/severity";
 
 interface Props {
   incidents: SimilarIncident[];
+  onViewIncident?: (id: string) => void;
 }
 
-export default function SimilarIncidents({ incidents }: Props) {
+export default function SimilarIncidents({ incidents, onViewIncident }: Props) {
   if (incidents.length === 0) return null;
 
   return (
@@ -17,7 +18,11 @@ export default function SimilarIncidents({ incidents }: Props) {
         {incidents.map((inc) => {
           const badgeClass = LEVEL_COLORS[inc.global_level] ?? LEVEL_COLORS.non_applicable;
           return (
-            <div key={inc.id} className="border rounded-md p-3">
+            <div
+              key={inc.id}
+              className={`border rounded-md p-3${onViewIncident ? " cursor-pointer hover:bg-gray-50 hover:border-gray-400 transition-colors" : ""}`}
+              onClick={() => onViewIncident?.(inc.id)}
+            >
               <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-gray-500">

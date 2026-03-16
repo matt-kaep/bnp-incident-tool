@@ -21,6 +21,7 @@ interface Props {
   analyses: AnalysesState;
   incidentId: string | null;
   similarIncidents: SimilarIncident[];
+  onViewIncident?: (id: string) => void;
 }
 
 export default function ResultsDashboard({
@@ -30,6 +31,7 @@ export default function ResultsDashboard({
   analyses,
   incidentId,
   similarIncidents,
+  onViewIncident,
 }: Props) {
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
@@ -100,7 +102,7 @@ export default function ResultsDashboard({
       </div>
 
       {/* Similar incidents */}
-      <SimilarIncidents incidents={similarIncidents} />
+      <SimilarIncidents incidents={similarIncidents} onViewIncident={onViewIncident} />
 
       {/* Unknown impacts */}
       {result.unknown_impacts && result.unknown_impacts.length > 0 && (

@@ -100,6 +100,7 @@ function AppContent() {
                 analyses={analyses}
                 incidentId={incidentId}
                 similarIncidents={similarIncidents}
+                onViewIncident={(id) => setView({ detail: id })}
               />
             )}
           </>
